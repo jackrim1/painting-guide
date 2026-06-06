@@ -44,6 +44,7 @@
         <span class="text-xs text-gray-300 mt-1">JPEG, PNG, or WebP</span>
         <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
       </label>
+      <img id="input-preview" src="" alt="Input preview" class="hidden w-full mt-3 rounded-lg border border-gray-100" />
     </div>
 
     <!-- Controls -->
@@ -131,8 +132,17 @@
     focusSlider.addEventListener('input', () => focusVal.textContent = focusSlider.value)
 
     // File selection
+    const inputPreview = document.getElementById('input-preview')
+
+    function showInputPreview(file) {
+      fileLabel.textContent = file.name
+      const url = URL.createObjectURL(file)
+      inputPreview.src = url
+      inputPreview.classList.remove('hidden')
+    }
+
     fileInput.addEventListener('change', () => {
-      if (fileInput.files[0]) fileLabel.textContent = fileInput.files[0].name
+      if (fileInput.files[0]) showInputPreview(fileInput.files[0])
     })
 
     // Drag and drop
@@ -146,7 +156,7 @@
         const dt = new DataTransfer()
         dt.items.add(file)
         fileInput.files = dt.files
-        fileLabel.textContent = file.name
+        showInputPreview(file)
       }
     })
 
