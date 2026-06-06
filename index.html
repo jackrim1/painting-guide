@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painting Guide</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    input[type=range]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #111; cursor: pointer; }
+    input[type=range]::-webkit-slider-runnable-track { height: 2px; background: #e5e7eb; border-radius: 1px; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 font-sans antialiased min-h-screen">
+
+  <div class="max-w-xl mx-auto px-6 py-16">
+
+    <!-- Header -->
+    <div class="mb-10">
+      <h1 class="text-lg font-semibold tracking-tight">Painting Guide</h1>
+      <p class="text-sm text-gray-400 mt-1">Turn an oil painting into a clean line drawing for reference.</p>
+    </div>
+
+    <!-- Upload -->
+    <div class="mb-8">
+      <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Painting</label>
+      <label id="drop-zone" class="flex flex-col items-center justify-center w-full h-36 border border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-gray-400 transition-colors">
+        <svg class="w-5 h-5 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        <span id="file-label" class="text-sm text-gray-400">Click to upload or drag and drop</span>
+        <span class="text-xs text-gray-300 mt-1">JPEG, PNG, or WebP</span>
+        <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+      </label>
+    </div>
+
+    <!-- Controls -->
+    <div class="space-y-7 mb-10">
+
+      <div>
+        <div class="flex justify-between items-baseline mb-2">
+          <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Line detail</label>
+          <span id="threshold-val" class="text-xs tabular-nums text-gray-400">80</span>
+        </div>
+        <input id="edge-threshold" type="range" min="0" max="100" value="80" class="w-full h-0.5 bg-gray-100 appearance-none cursor-pointer" />
+        <div class="flex justify-between mt-1.5">
+          <span class="text-xs text-gray-300">Fewer, bolder lines</span>
+          <span class="text-xs text-gray-300">More detail</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex justify-between items-baseline mb-2">
+          <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Focus on main shapes</label>
+          <span id="focus-val" class="text-xs tabular-nums text-gray-400">40</span>
+        </div>
+        <input id="feature-focus" type="range" min="0" max="100" value="40" class="w-full h-0.5 bg-gray-100 appearance-none cursor-pointer" />
+        <div class="flex justify-between mt-1.5">
+          <span class="text-xs text-gray-300">Include small details</span>
+          <span class="text-xs text-gray-300">Big shapes only</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">What to look for</label>
+        <input
+          id="subject-prompt"
+          type="text"
+          value="person . face . body . clothing"
+          class="w-full text-sm border border-gray-200 rounded-md px-3 py-2 outline-none focus:border-gray-400 transition-colors placeholder-gray-300"
+          placeholder="person . face . body"
+        />
+        <p class="text-xs text-gray-300 mt-1.5">Separate subjects with a dot. E.g. "person . cat . tree"</p>
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <button
+      id="generate-btn"
+      class="w-full bg-gray-900 text-white text-sm font-medium py-2.5 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      Generate drawing guide
+    </button>
+
+    <!-- Status -->
+    <p id="status" class="text-xs text-gray-400 text-center mt-4 h-4"></p>
+
+    <!-- Result -->
+    <div id="result-area" class="hidden mt-10">
+      <div class="flex items-baseline justify-between mb-3">
+        <label class="text-xs font-medium text-gray-500 uppercase tracking-wider">Result</label>
+        <a id="download-link" class="text-xs text-gray-400 hover:text-gray-900 transition-colors" download="guide.png">Download</a>
+      </div>
+      <img id="result-img" src="" alt="Drawing guide" class="w-full rounded-lg border border-gray-100" />
+    </div>
+
+  </div>
+
+  <script>
+    const API = 'https://jackrim1--painting-guide-serve.modal.run'
+
+    const fileInput = document.getElementById('file-input')
+    const fileLabel = document.getElementById('file-label')
+    const dropZone = document.getElementById('drop-zone')
+    const thresholdSlider = document.getElementById('edge-threshold')
+    const focusSlider = document.getElementById('feature-focus')
+    const thresholdVal = document.getElementById('threshold-val')
+    const focusVal = document.getElementById('focus-val')
+    const subjectPrompt = document.getElementById('subject-prompt')
+    const generateBtn = document.getElementById('generate-btn')
+    const status = document.getElementById('status')
+    const resultArea = document.getElementById('result-area')
+    const resultImg = document.getElementById('result-img')
+    const downloadLink = document.getElementById('download-link')
+
+    // Slider live values
+    thresholdSlider.addEventListener('input', () => thresholdVal.textContent = thresholdSlider.value)
+    focusSlider.addEventListener('input', () => focusVal.textContent = focusSlider.value)
+
+    // File selection
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) fileLabel.textContent = fileInput.files[0].name
+    })
+
+    // Drag and drop
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-gray-400') })
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-gray-400'))
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault()
+      dropZone.classList.remove('border-gray-400')
+      const file = e.dataTransfer.files[0]
+      if (file) {
+        const dt = new DataTransfer()
+        dt.items.add(file)
+        fileInput.files = dt.files
+        fileLabel.textContent = file.name
+      }
+    })
+
+    // Generate
+    generateBtn.addEventListener('click', async () => {
+      if (!fileInput.files[0]) {
+        status.textContent = 'Please select an image first.'
+        return
+      }
+
+      generateBtn.disabled = true
+      resultArea.classList.add('hidden')
+      status.textContent = 'Sending to GPU — this may take a minute on first run…'
+
+      const params = new URLSearchParams({
+        edge_threshold: thresholdSlider.value,
+        feature_focus: focusSlider.value,
+        subject_prompt: subjectPrompt.value,
+      })
+
+      const body = new FormData()
+      body.append('file', fileInput.files[0])
+
+      try {
+        const res = await fetch(`${API}/guide?${params}`, { method: 'POST', body })
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: res.statusText }))
+          throw new Error(err.detail || res.statusText)
+        }
+
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        resultImg.src = url
+        downloadLink.href = url
+        resultArea.classList.remove('hidden')
+        status.textContent = ''
+      } catch (err) {
+        status.textContent = `Error: ${err.message}`
+      } finally {
+        generateBtn.disabled = false
+      }
+    })
+  </script>
+
+</body>
+</html>
