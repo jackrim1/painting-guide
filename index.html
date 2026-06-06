@@ -127,9 +127,24 @@
     const resultImg = document.getElementById('result-img')
     const downloadLink = document.getElementById('download-link')
 
+    // Restore saved settings
+    const saved = JSON.parse(localStorage.getItem('painting-guide-settings') || '{}')
+    if (saved.edgeThreshold !== undefined) { thresholdSlider.value = saved.edgeThreshold; thresholdVal.textContent = saved.edgeThreshold }
+    if (saved.featureFocus !== undefined) { focusSlider.value = saved.featureFocus; focusVal.textContent = saved.featureFocus }
+    if (saved.subjectPrompt !== undefined) { subjectPrompt.value = saved.subjectPrompt }
+
+    function saveSettings() {
+      localStorage.setItem('painting-guide-settings', JSON.stringify({
+        edgeThreshold: thresholdSlider.value,
+        featureFocus: focusSlider.value,
+        subjectPrompt: subjectPrompt.value,
+      }))
+    }
+
     // Slider live values
-    thresholdSlider.addEventListener('input', () => thresholdVal.textContent = thresholdSlider.value)
-    focusSlider.addEventListener('input', () => focusVal.textContent = focusSlider.value)
+    thresholdSlider.addEventListener('input', () => { thresholdVal.textContent = thresholdSlider.value; saveSettings() })
+    focusSlider.addEventListener('input', () => { focusVal.textContent = focusSlider.value; saveSettings() })
+    subjectPrompt.addEventListener('input', saveSettings)
 
     // File selection
     const inputPreview = document.getElementById('input-preview')
